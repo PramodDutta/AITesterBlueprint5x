@@ -13,6 +13,7 @@ Hands-on course material from **The Testing Academy** for testers moving into AI
 - [Chapters](#-chapters)
   - [00 · Agent Skill Basics](#00--agent-skill-basics)
   - [01 · LLM Fundamentals from Scratch](#01--llm-fundamentals-from-scratch)
+  - [02 · Prompt Engineering: RICE-POT to a Selenium Framework](#02--prompt-engineering-rice-pot-to-a-selenium-framework)
 - [Learnings](#-learnings)
 
 ---
@@ -22,12 +23,10 @@ Hands-on course material from **The Testing Academy** for testers moving into AI
 ```mermaid
 flowchart LR
     C0["Ch 00 · Agent Skills<br/>SKILL.md basics + advanced"] --> C1["Ch 01 · LLM Fundamentals<br/>13 lessons, one HTML guide"]
-    C1 --> C2["Ch 02 · Prompt Engineering<br/>planned"]
+    C1 --> C2["Ch 02 · Prompt Engineering<br/>RICE-POT -> Selenium framework"]
 
     classDef done fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
-    classDef planned fill:#f5f5f5,stroke:#9e9e9e,color:#616161,stroke-dasharray: 5 5
-    class C0,C1 done
-    class C2 planned
+    class C0,C1,C2 done
 ```
 
 ---
@@ -38,7 +37,7 @@ flowchart LR
 |:-:|:--------|:------------------------|:-------|:------:|
 | 00 | [Agent Skill Basics](Chapter_00_SKILL_Basics/) | A basic and an advanced test-plan skill (Jira ticket -> reviewed test plan) | `SKILL.md` + references + scripts | ✅ |
 | 01 | [LLM Fundamentals from Scratch](Chapter_01_LLM_Basics/) | 13 plain-words lessons: tokens, temperature, context, RAG, MCP, agents, testing LLM output | Single-file HTML guide | ✅ |
-| 02 | Prompt Engineering | Coming next | | ⏳ |
+| 02 | [Prompt Engineering](Chapter_02_Prompt_Engineering/RICE_POT/) | A RICE-POT prompt turned into a Selenium + Java framework for the Salesforce login page, run headless and headed | Maven + TestNG + Allure | ✅ |
 
 ---
 
@@ -61,6 +60,22 @@ AITesterBlueprint5x/
 │   └── resources/VWO-49.doc                 # source ticket
 ├── Chapter_01_LLM_Basics/
 │   └── LLM_Fundamentals.html                # 13-lesson guide, open in any browser
+├── Chapter_02_Prompt_Engineering/
+│   └── RICE_POT/
+│       ├── REALPROMPT_RICE_POT.md           # the filled RICE-POT prompt behind the framework
+│       ├── Template_RICE_POT/               # blank RICE-POT template + guardrail block
+│       └── SeleniumFramework/               # Maven + TestNG + Selenium 4 + Allure
+│           ├── pom.xml
+│           ├── testng.xml                   # "Valid Login" and "Invalid Login" tests
+│           └── src/
+│               ├── main/java/com/atb5x/salesforce/
+│               │   ├── pages/LoginPage.java         # PageFactory, XPath only, explicit waits
+│               │   └── exceptions/FrameworkException.java
+│               └── test/
+│                   ├── java/com/atb5x/salesforce/
+│                   │   ├── base/BaseTest.java       # config, one driver per test, failure evidence
+│                   │   └── tests/                   # ValidLoginTest, InvalidLoginTest
+│                   └── resources/                   # config.properties, allure.properties
 ├── learnings/                               # one-page approach notes per solved problem
 ├── output/                                  # generated test plans (HTML + PDF)
 └── .env                                     # Jira credentials, git-ignored
@@ -83,6 +98,10 @@ JIRA_BASE_URL=https://yourco.atlassian.net
 JIRA_EMAIL=you@yourco.com
 JIRA_TOKEN=your-api-token
 EOF
+
+# Chapter 02: needs Java 17+, Maven and Chrome (Selenium Manager downloads the driver)
+cd Chapter_02_Prompt_Engineering/RICE_POT/SeleniumFramework
+mvn clean test
 ```
 
 ---
@@ -205,6 +224,82 @@ Tone: Clear and short.
 
 ---
 
+### 02 · Prompt Engineering: RICE-POT to a Selenium Framework
+
+**Concept:** RICE-POT is a seven-part prompt structure: **R**ole, **I**nstructions, **C**ontext, **E**xample, **P**arameters, **O**utput, **T**one, plus a guardrail block against hallucination. This chapter takes one real RICE-POT prompt ([REALPROMPT_RICE_POT.md](Chapter_02_Prompt_Engineering/RICE_POT/REALPROMPT_RICE_POT.md)) and turns it into a working Selenium + Java framework for the Salesforce login page at `login.salesforce.com/?locale=in`, then runs it in headless and headed Chrome. Start your own prompt from the [blank template](Chapter_02_Prompt_Engineering/RICE_POT/Template_RICE_POT/Template.RICEPPOT.md).
+
+**Why:** A one-line "write Selenium tests for login" prompt gives you "typical" code: CSS selectors, `Thread.sleep`, made-up locators. Each RICE-POT block removes a class of mistakes. `[Don't]` rules ban the bad practices, the Parameters block bans invented UI, and the Output block fixes exactly which files you get.
+
+**Q&A: why use this?**
+- **Q: When do I reach for RICE-POT?** A: When you want AI-generated test code or test cases to come out in your framework's shape every time: same patterns, same locator strategy, same report.
+- **Q: What does it replace?** A: Vague prompts plus a long round of "no, use XPath", "no sleeps", "add Allure" corrections after the code comes back.
+- **Q: What's the gotcha?** A: The prompt is not the truth, the live page is. The prompt describes one form with username, password and submit. The real page logs you in over two steps (username first, then password), and the same URL sometimes serves a different "Log In with Email" page. Check the live DOM before you trust any generated locator.
+
+**How each RICE-POT block shows up in the code**
+
+| Block | What the prompt asked for | Where it lives |
+|:------|:--------------------------|:---------------|
+| R · Role | Senior Salesforce QA automation tester | Allure Epic / Feature / Story / Severity on every test |
+| I · Instructions | TestNG, POM + PageFactory, XPath only, try-catch, Allure, no sleeps | `LoginPage.java`, `BaseTest.java`, `pom.xml` |
+| C · Context | Username, password, submit, Remember me | `@FindBy(xpath = ...)` fields in `LoginPage` |
+| E · Example | PageFactory `LoginPage` with a `doLogin()` method | `LoginPage.doLogin()`, extended for the two-step flow |
+| P · Parameters | No invented UI, "Insufficient information to determine." | Error strings copied from the live page; the valid-credential test skips with that exact text when no credentials are given |
+| O · Output | 1 page object, 2 TestNG scripts, a Maven project | `LoginPage`, `ValidLoginTest`, `InvalidLoginTest`, `pom.xml` |
+| T · Tone | Code only | No comments anywhere in the source |
+
+**The login flow the page object handles**
+
+```mermaid
+flowchart TD
+    A["open(base.url)"] --> B{"Which page was served?"}
+    B -->|"Username form"| D["Step 1: enter username, click Log In"]
+    B -->|"Log In with Email variant"| C["Click 'Log In with Username'"]
+    C --> D
+    D --> E["Step 2: password field + identity card"]
+    E --> F["Enter password, click Log In"]
+    F --> G{"Result"}
+    G -->|"Wrong or empty input"| H["div#error shows the exact message"]
+    G -->|"Valid credentials"| I["Login form goes away"]
+
+    classDef variant fill:#fff3e0,stroke:#ef6c00,color:#e65100
+    class C variant
+```
+
+**Test cases**
+
+| Class | Test | Checks |
+|:------|:-----|:-------|
+| `ValidLoginTest` | `verifyLoginPageTitle` | Title is `Login \| Salesforce` |
+| | `verifyLoginPageElementsAreDisplayed` | Logo, Username, Log In, Remember me, Forgot Your Password (soft asserts) |
+| | `verifyRememberMeCheckbox` | Unchecked by default, checked after a click |
+| | `verifyUsernameStepRevealsPasswordField` | Password field appears and the identity card shows the username |
+| | `verifyLoginWithValidCredentials` | Skips with "Insufficient information to determine." unless credentials are given |
+| `InvalidLoginTest` | `verifyErrorForEmptyUsername` | `Error: Please enter your username.` |
+| | `verifyErrorForEmptyPassword` | `Error: Please enter your password.` |
+| | `verifyErrorForInvalidCredentials` (2 data rows) | `Error: Please check your username and password. ...` and the user stays on the login page |
+
+Last run (2026-11-01): 9 tests, 8 passed, 1 skipped (valid credentials), in both headless and headed Chrome.
+
+**Code sample:** run it, then open the Allure report.
+
+```bash
+cd Chapter_02_Prompt_Engineering/RICE_POT/SeleniumFramework
+
+mvn clean test                          # headed Chrome (default in config.properties)
+mvn clean test -Dheadless=true          # headless, for CI
+mvn clean test -Dbrowser=firefox        # chrome | firefox | edge
+
+# enable the valid-login test with a real org (env vars keep the password out of shell history)
+export SF_USERNAME='you@yourorg.com' SF_PASSWORD='your-password'
+mvn clean test
+
+allure serve target/allure-results      # needs the Allure CLI (brew install allure)
+```
+
+Every `config.properties` key (`base.url`, `browser`, `headless`, `explicit.wait.seconds`, `page.load.timeout.seconds`) can be overridden with `-Dkey=value`. When a test or a setUp fails, a screenshot, the URL and the page source are attached to the Allure report.
+
+---
+
 ## 🧠 Learnings
 
 [learnings/](learnings/) holds one-page notes on how a non-trivial problem was solved: the approach, the judgment calls, and one reusable rule.
@@ -212,3 +307,4 @@ Tone: Clear and short.
 | Date | Note |
 |:-----|:-----|
 | 2026-10-25 | [Jira ticket to review-ready test plan PDF](learnings/2026-10-25-jira-ticket-to-test-plan-pdf.md) |
+| 2026-11-01 | [Salesforce login Selenium framework from a RICE-POT prompt](learnings/2026-11-01-salesforce-login-selenium-from-rice-pot.md) |

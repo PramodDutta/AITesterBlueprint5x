@@ -1,0 +1,13 @@
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="Salesforce Login Suite" verbose="1" configfailurepolicy="continue">
+    <test name="Valid Login">
+        <classes>
+            <class name="com.atb5x.salesforce.tests.ValidLoginTest"/>
+        </classes>
+    </test>
+    <test name="Invalid Login">
+        <classes>
+            <class name="com.atb5x.salesforce.tests.InvalidLoginTest"/>
+        </classes>
+    </test>
+</suite>
