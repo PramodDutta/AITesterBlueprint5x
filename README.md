@@ -14,6 +14,7 @@ Hands-on course material from **The Testing Academy** for testers moving into AI
   - [00 · Agent Skill Basics](#00--agent-skill-basics)
   - [01 · LLM Fundamentals from Scratch](#01--llm-fundamentals-from-scratch)
   - [02 · Prompt Engineering: RICE-POT to a Selenium Framework](#02--prompt-engineering-rice-pot-to-a-selenium-framework)
+  - [02.1 · Anti-Hallucination Rules](#021--anti-hallucination-rules)
 - [Learnings](#-learnings)
 
 ---
@@ -24,9 +25,10 @@ Hands-on course material from **The Testing Academy** for testers moving into AI
 flowchart LR
     C0["Ch 00 · Agent Skills<br/>SKILL.md basics + advanced"] --> C1["Ch 01 · LLM Fundamentals<br/>13 lessons, one HTML guide"]
     C1 --> C2["Ch 02 · Prompt Engineering<br/>RICE-POT -> Selenium framework"]
+    C2 --> C21["Ch 02.1 · Anti-Hallucination Rules<br/>verified facts only"]
 
     classDef done fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
-    class C0,C1,C2 done
+    class C0,C1,C2,C21 done
 ```
 
 ---
@@ -38,6 +40,7 @@ flowchart LR
 | 00 | [Agent Skill Basics](Chapter_00_SKILL_Basics/) | A basic and an advanced test-plan skill (Jira ticket -> reviewed test plan) | `SKILL.md` + references + scripts | ✅ |
 | 01 | [LLM Fundamentals from Scratch](Chapter_01_LLM_Basics/) | 13 plain-words lessons: tokens, temperature, context, RAG, MCP, agents, testing LLM output | Single-file HTML guide | ✅ |
 | 02 | [Prompt Engineering](Chapter_02_Prompt_Engineering/RICE_POT/) | A RICE-POT prompt turned into a Selenium + Java framework for the Salesforce login page, run headless and headed | Maven + TestNG + Allure | ✅ |
+| 02.1 | [Anti-Hallucination Rules](Chapter_02_Prompt_Engineering/anti-hallucination.rules.md) | A reusable rule block that limits a QA assistant to the input you give it and makes it report what is missing | Prompt rules (Markdown) | ✅ |
 
 ---
 
@@ -61,6 +64,7 @@ AITesterBlueprint5x/
 ├── Chapter_01_LLM_Basics/
 │   └── LLM_Fundamentals.html                # 13-lesson guide, open in any browser
 ├── Chapter_02_Prompt_Engineering/
+│   ├── anti-hallucination.rules.md          # reusable guardrails: facts only, four-part output
 │   └── RICE_POT/
 │       ├── REALPROMPT_RICE_POT.md           # the filled RICE-POT prompt behind the framework
 │       ├── Template_RICE_POT/               # blank RICE-POT template + guardrail block
@@ -297,6 +301,76 @@ allure serve target/allure-results      # needs the Allure CLI (brew install all
 ```
 
 Every `config.properties` key (`base.url`, `browser`, `headless`, `explicit.wait.seconds`, `page.load.timeout.seconds`) can be overridden with `-Dkey=value`. When a test or a setUp fails, a screenshot, the URL and the page source are attached to the Allure report.
+
+---
+
+### 02.1 · Anti-Hallucination Rules
+
+**Concept:** [anti-hallucination.rules.md](Chapter_02_Prompt_Engineering/anti-hallucination.rules.md) is a reusable prompt block that limits a QA assistant to what you actually give it (PRD, API docs, logs, screenshots, test data, user input) and makes it answer in four fixed sections: Verified Facts, Missing / Unknown Information, Generated Output, Self-Validation Check.
+
+**Why:** Asked about a system it cannot see, an LLM fills the gaps with "typical" behaviour, so a test can look right while checking a feature, an error code or a button that does not exist.
+
+**Q&A: why use this?**
+- **Q: When do I reach for it?** A: Whenever AI output turns into something people will trust: test cases, bug reports, locators. Paste it above your task and input, or use it as the guardrail block in a RICE-POT prompt.
+- **Q: What does it replace?** A: Telling the model "be accurate", which gives it no way to say "I don't know". These rules give it two exact phrases, `Insufficient information to determine.` and `Inference (low confidence)`, so you can search the output for them.
+- **Q: What's the gotcha?** A: It lowers the risk but does not remove it. The Self-Validation Check is written by the same model that wrote the output, so a person still has to trace each assertion back to the input.
+
+```mermaid
+flowchart TD
+    A["Your input<br/>PRD, API docs, logs, screenshots, test data"] --> B["Step 1: extract verifiable facts"]
+    B --> C["Step 2: list unknown or missing information"]
+    C --> D["Step 3: generate output only from Step 1 facts"]
+    D --> Q{"For each detail"}
+    Q -->|"Stated in the input"| G["Write it, traceable to the input"]
+    Q -->|"Inferred"| H["Label it: Inference (low confidence)"]
+    Q -->|"Missing or unclear"| I["Say: Insufficient information to determine."]
+    G --> E["Step 4: self-check for hallucinations or contradictions"]
+    H --> E
+    I --> E
+    E --> F["Four-part output"]
+
+    classDef guard fill:#fff3e0,stroke:#ef6c00,color:#e65100
+    class H,I guard
+```
+
+**Where the two phrases already appear in this repo**
+
+| File | How it uses them |
+|:-----|:-----------------|
+| [REALPROMPT_RICE_POT.md](Chapter_02_Prompt_Engineering/RICE_POT/REALPROMPT_RICE_POT.md) | Guardrail block of the Selenium prompt |
+| [Template.RICEPPOT.md](Chapter_02_Prompt_Engineering/RICE_POT/Template_RICE_POT/Template.RICEPPOT.md) | Guardrail block of the blank template |
+| [ValidLoginTest.java](Chapter_02_Prompt_Engineering/RICE_POT/SeleniumFramework/src/test/java/com/atb5x/salesforce/tests/ValidLoginTest.java) | The skip reason when no credentials are given, and the label on the inferred success check |
+
+**Code sample:** a shortened copy of the rules with a real task. Paste it into any chat model.
+
+```text
+ROLE: You are a QA assistant operating under strict verification rules.
+
+You may ONLY use information explicitly provided in the input below.
+
+1. DO NOT invent features, APIs, error codes, UI elements, or behavior.
+2. DO NOT assume default or "typical" system behavior.
+3. If information is missing or unclear, respond with:
+   "Insufficient information to determine."
+4. Every assertion must be traceable to provided input.
+5. If a detail is inferred, label it explicitly as:
+   "Inference (low confidence)".
+6. Output must be deterministic and repeatable.
+
+OUTPUT FORMAT (STRICT):
+- Verified Facts:
+- Missing / Unknown Information:
+- Generated Output:
+- Self-Validation Check:
+
+TASK: Write test cases for the Salesforce login errors in the input.
+
+INPUT:
+- Empty username shows "Error: Please enter your username."
+- Empty password shows "Error: Please enter your password."
+```
+
+**What to check:** the input says nothing about account lockout, so a lockout test under Generated Output means the model ignored the rules.
 
 ---
 
