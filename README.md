@@ -15,6 +15,7 @@ Hands-on course material from **The Testing Academy** for testers moving into AI
   - [01 · LLM Fundamentals from Scratch](#01--llm-fundamentals-from-scratch)
   - [02 · Prompt Engineering: RICE-POT to a Selenium Framework](#02--prompt-engineering-rice-pot-to-a-selenium-framework)
   - [02.1 · Anti-Hallucination Rules](#021--anti-hallucination-rules)
+  - [03 · Prompt Frameworks for QA: STAR, CLEAR, CRISP](#03--prompt-frameworks-for-qa-star-clear-crisp)
 - [Learnings](#-learnings)
 
 ---
@@ -26,9 +27,10 @@ flowchart LR
     C0["Ch 00 · Agent Skills<br/>SKILL.md basics + advanced"] --> C1["Ch 01 · LLM Fundamentals<br/>13 lessons, one HTML guide"]
     C1 --> C2["Ch 02 · Prompt Engineering<br/>RICE-POT -> Selenium framework"]
     C2 --> C21["Ch 02.1 · Anti-Hallucination Rules<br/>verified facts only"]
+    C21 --> C3["Ch 03 · Prompt Frameworks for QA<br/>STAR, CLEAR, CRISP -> plan, cases, bug"]
 
     classDef done fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
-    class C0,C1,C2,C21 done
+    class C0,C1,C2,C21,C3 done
 ```
 
 ---
@@ -41,6 +43,7 @@ flowchart LR
 | 01 | [LLM Fundamentals from Scratch](Chapter_01_LLM_Basics/) | 13 plain-words lessons: tokens, temperature, context, RAG, MCP, agents, testing LLM output | Single-file HTML guide | ✅ |
 | 02 | [Prompt Engineering](Chapter_02_Prompt_Engineering/RICE_POT/) | A RICE-POT prompt turned into a Selenium + Java framework for the Salesforce login page, run headless and headed | Maven + TestNG + Allure | ✅ |
 | 02.1 | [Anti-Hallucination Rules](Chapter_02_Prompt_Engineering/anti-hallucination.rules.md) | A reusable rule block that limits a QA assistant to the input you give it and makes it report what is missing | Prompt rules (Markdown) | ✅ |
+| 03 | [Prompt Frameworks for QA](Chapter_03_Prompt_Engineering_QA/) | Three prompt frameworks for the VWO login page: STAR -> test plan, CLEAR -> 10 test cases, CRISP -> one bug report | Prompts (Markdown) + Word outputs | ✅ |
 
 ---
 
@@ -80,6 +83,15 @@ AITesterBlueprint5x/
 │                   │   ├── base/BaseTest.java       # config, one driver per test, failure evidence
 │                   │   └── tests/                   # ValidLoginTest, InvalidLoginTest
 │                   └── resources/                   # config.properties, allure.properties
+├── Chapter_03_Prompt_Engineering_QA/
+│   ├── STAR.md                              # Situation, Task, Action, Result -> test plan
+│   ├── Template.md                          # test plan table of contents the STAR prompt fills
+│   ├── CLEAR.md                             # Context, Limits, Examples, Action, Review -> test cases
+│   ├── CRISP.md                             # Context, Role, Instructions, Style, Parameters -> bug report
+│   └── output/
+│       ├── VWO_Login_Test_Plan.md / .docx   # STAR output (Markdown source + Word)
+│       ├── VWO_Login_Test_Cases.docx        # CLEAR output: 10 cases, all "Not Run"
+│       └── VWO_Login_Bug_Report.docx        # CRISP output: hypothetical training bug
 ├── learnings/                               # one-page approach notes per solved problem
 ├── output/                                  # generated test plans (HTML + PDF)
 └── .env                                     # Jira credentials, git-ignored
@@ -371,6 +383,64 @@ INPUT:
 ```
 
 **What to check:** the input says nothing about account lockout, so a lockout test under Generated Output means the model ignored the rules.
+
+---
+
+### 03 · Prompt Frameworks for QA: STAR, CLEAR, CRISP
+
+**Concept:** Three prompt frameworks, each matched to one QA document, all run against the same VWO login page (`app.vwo.com`). [STAR](Chapter_03_Prompt_Engineering_QA/STAR.md) (Situation, Task, Action, Result) produces a test plan, [CLEAR](Chapter_03_Prompt_Engineering_QA/CLEAR.md) (Context, Limits, Examples, Action, Review) produces 10 test cases, and [CRISP](Chapter_03_Prompt_Engineering_QA/CRISP.md) (Context, Role, Instructions, Style, Parameters) produces one bug report.
+
+**Why:** Each QA document fails in its own way: a plan drifts into invented rules, test cases drift in format, a bug report mixes what was seen with what was guessed. Each framework has a slot that blocks that failure.
+
+**Q&A: why use this?**
+- **Q: When do I reach for which one?** A: STAR when you need a planning document, CLEAR when you need many items in one fixed format (it carries a filled example and a review checklist), CRISP when one precise artifact must be readable by someone who was not there.
+- **Q: What does it replace?** A: "Write a test plan for the login page", which returns password rules, error messages and session timeouts that nobody approved.
+- **Q: What's the gotcha?** A: The requirements decide what can be tested. All three prompts tell the model to write "Requires clarification", "Not supplied" or "Not provided" instead of guessing, so read those markers first: they are the questions to take to the Product Owner.
+
+```mermaid
+flowchart LR
+    R["VWO login requirements<br/>REQ-01 to REQ-05"] --> S["STAR<br/>Situation · Task · Action · Result"]
+    R --> C["CLEAR<br/>Context · Limits · Examples · Action · Review"]
+    R --> K["CRISP<br/>Context · Role · Instructions · Style · Parameters"]
+    S --> SO["Test plan<br/>16 scenarios, 11 open questions"]
+    C --> CO["10 test cases<br/>all Not Run"]
+    K --> KO["1 bug report<br/>Hypothetical training example"]
+    SO --> G["🛑 Review: every 'Requires clarification'<br/>goes to the Product Owner"]
+    CO --> G
+    KO --> G
+
+    classDef gate fill:#fff3e0,stroke:#ef6c00,color:#e65100
+    class G gate
+```
+
+**Which framework for which document**
+
+| Framework | Output in this chapter | The slot that does the most work | Unknowns are marked as |
+|:----------|:-----------------------|:---------------------------------|:-----------------------|
+| STAR | [Test plan](Chapter_03_Prompt_Engineering_QA/output/VWO_Login_Test_Plan.md) ([.docx](Chapter_03_Prompt_Engineering_QA/output/VWO_Login_Test_Plan.docx)), follows [Template.md](Chapter_03_Prompt_Engineering_QA/Template.md) | Action: "Do not invent password rules, exact error messages, or session timeouts." | Requires clarification, (Recommendation) |
+| CLEAR | [10 test cases](Chapter_03_Prompt_Engineering_QA/output/VWO_Login_Test_Cases.docx), Jira-style table | Examples: one filled test case fixes the format for all ten | Requires clarification |
+| CRISP | [Bug report](Chapter_03_Prompt_Engineering_QA/output/VWO_Login_Bug_Report.docx), under 500 words | Instructions: "Distinguish observed behavior from assumptions." | Not supplied, Not provided, Provisional |
+
+**Code sample:** the CRISP prompt behind the bug report, shortened. Paste it into any chat model.
+
+```text
+Context: For a training exercise, assume I observed this defect at https://app.vwo.com/:
+- Requirement: Email and password are mandatory.
+- Action: Enter a registered test email, leave the password empty, submit the login form.
+- Observation: The form submits, but no visible validation feedback appears.
+- Reproducibility: 3 out of 3 attempts.
+- Browser, OS, build, time, screenshots, logs: Not supplied.
+Role: Act as a senior QA engineer writing a clear, reproducible bug report.
+Instructions: Title, Environment, Preconditions, Test Data, Steps to Reproduce,
+  Expected Result, Actual Result, Reproducibility, Suggested Severity, Attachments.
+  Do not invent the exact validation text. Distinguish observed behavior from
+  assumptions. Label severity as provisional.
+Style: Concise, factual, numbered steps, for a developer who has not seen the issue.
+Parameters: One report, under 500 words, placeholders for accounts,
+  label it "Hypothetical training example."
+```
+
+**What to check:** the observation never says whether the user ended up logged in. A good answer lists that as "Not observed" and makes severity depend on it, a bad one assumes it either way.
 
 ---
 
