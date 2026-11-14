@@ -16,6 +16,7 @@ Hands-on course material from **The Testing Academy** for testers moving into AI
   - [02 · Prompt Engineering: RICE-POT to a Selenium Framework](#02--prompt-engineering-rice-pot-to-a-selenium-framework)
   - [02.1 · Anti-Hallucination Rules](#021--anti-hallucination-rules)
   - [03 · Prompt Frameworks for QA: STAR, CLEAR, CRISP](#03--prompt-frameworks-for-qa-star-clear-crisp)
+  - [03.1 · Reusable QA Prompt Templates](#031--reusable-qa-prompt-templates)
 - [Learnings](#-learnings)
 
 ---
@@ -28,9 +29,10 @@ flowchart LR
     C1 --> C2["Ch 02 · Prompt Engineering<br/>RICE-POT -> Selenium framework"]
     C2 --> C21["Ch 02.1 · Anti-Hallucination Rules<br/>verified facts only"]
     C21 --> C3["Ch 03 · Prompt Frameworks for QA<br/>STAR, CLEAR, CRISP -> plan, cases, bug"]
+    C3 --> C31["Ch 03.1 · Reusable Prompt Templates<br/>6 fill-in-the-blank QA prompts"]
 
     classDef done fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
-    class C0,C1,C2,C21,C3 done
+    class C0,C1,C2,C21,C3,C31 done
 ```
 
 ---
@@ -44,6 +46,7 @@ flowchart LR
 | 02 | [Prompt Engineering](Chapter_02_Prompt_Engineering/RICE_POT/) | A RICE-POT prompt turned into a Selenium + Java framework for the Salesforce login page, run headless and headed | Maven + TestNG + Allure | ✅ |
 | 02.1 | [Anti-Hallucination Rules](Chapter_02_Prompt_Engineering/anti-hallucination.rules.md) | A reusable rule block that limits a QA assistant to the input you give it and makes it report what is missing | Prompt rules (Markdown) | ✅ |
 | 03 | [Prompt Frameworks for QA](Chapter_03_Prompt_Engineering_QA/) | Three prompt frameworks for the VWO login page: STAR -> test plan, CLEAR -> 10 test cases, CRISP -> one bug report | Prompts (Markdown) + Word outputs | ✅ |
+| 03.1 | [Reusable QA Prompt Templates](Chapter_03_Prompt_Engineering_QA/reuse-templates/) | Six fill-in-the-blank prompts: basic, PRD-based, API, negative, security and regression test cases | Prompt templates (Markdown) | ✅ |
 
 ---
 
@@ -88,6 +91,13 @@ AITesterBlueprint5x/
 │   ├── Template.md                          # test plan table of contents the STAR prompt fills
 │   ├── CLEAR.md                             # Context, Limits, Examples, Action, Review -> test cases
 │   ├── CRISP.md                             # Context, Role, Instructions, Style, Parameters -> bug report
+│   ├── reuse-templates/                     # 6 fill-in-the-blank QA prompts
+│   │   ├── Template1_Basic_TC_Gen.md        # [NUMBER] test cases for [FEATURE]
+│   │   ├── Template2_PRD_TC_Comprehensive.md    # PRD -> functional, negative, boundary, edge
+│   │   ├── Template3_APITest_Gen.md         # API docs -> status-code-based tests
+│   │   ├── Template4_Negative_TC.md         # negative cases only
+│   │   ├── Template5_Security_TC.md         # OWASP-style checks, no real payloads
+│   │   └── Template6_Regression_Test_Suite.md   # end-to-end regression suite with time estimates
 │   └── output/
 │       ├── VWO_Login_Test_Plan.md / .docx   # STAR output (Markdown source + Word)
 │       ├── VWO_Login_Test_Cases.docx        # CLEAR output: 10 cases, all "Not Run"
@@ -441,6 +451,75 @@ Parameters: One report, under 500 words, placeholders for accounts,
 ```
 
 **What to check:** the observation never says whether the user ended up logged in. A good answer lists that as "Not observed" and makes severity depend on it, a bad one assumes it either way.
+
+---
+
+### 03.1 · Reusable QA Prompt Templates
+
+**Concept:** [reuse-templates/](Chapter_03_Prompt_Engineering_QA/reuse-templates/) holds six short prompts you fill in and reuse. Each has the same four parts: ROLE, TASK, CONSTRAINTS and a fixed FORMAT table, plus a slot like `[PASTE REQUIREMENTS HERE]` for your input.
+
+**Why:** Writing a full STAR or CLEAR prompt for every small job is slow, so these give you a tested starting point for the six test-design jobs testers do most.
+
+**Q&A: why use this?**
+- **Q: When do I reach for a template instead of STAR / CLEAR / CRISP?** A: For quick, repeatable jobs ("negative cases for this form", "API tests for this endpoint"). Use the full frameworks when the output is a document others will sign off.
+- **Q: What does it replace?** A: Retyping the role, rules and table columns every time, and getting a different table shape each run.
+- **Q: What's the gotcha?** A: Only Templates 1 to 3 tell the model what to do when information is missing. Templates 4 to 6 do not, and Template 6 asks for time estimates the input cannot support. Paste the [anti-hallucination rules](Chapter_02_Prompt_Engineering/anti-hallucination.rules.md) above them, or add a "Not specified" line to their CONSTRAINTS.
+
+```mermaid
+flowchart TD
+    Q{"What do you have?"} -->|"A few requirements"| T1["Template 1<br/>Basic test cases"]
+    Q -->|"A PRD, BRD, Jira or Confluence page"| T2["Template 2<br/>Comprehensive from PRD"]
+    Q -->|"API docs"| T3["Template 3<br/>API tests"]
+    Q -->|"A form or feature to break"| T4["Template 4<br/>Negative only"]
+    Q -->|"A feature with auth or user input"| T5["Template 5<br/>Security"]
+    Q -->|"A module before release"| T6["Template 6<br/>Regression suite"]
+    T4 --> G["Add a 'Not specified' rule<br/>or the anti-hallucination block"]
+    T5 --> G
+    T6 --> G
+
+    classDef guard fill:#fff3e0,stroke:#ef6c00,color:#e65100
+    class G guard
+```
+
+**The six templates**
+
+| # | Template | Output columns | Says what to do when info is missing? |
+|:-:|:---------|:---------------|:-------------------------------------:|
+| 1 | [Basic TC Gen](Chapter_03_Prompt_Engineering_QA/reuse-templates/Template1_Basic_TC_Gen.md) | Test ID, Description, Pre-conditions, Steps, Expected Result, Priority | ✅ "Not specified" |
+| 2 | [PRD TC Comprehensive](Chapter_03_Prompt_Engineering_QA/reuse-templates/Template2_PRD_TC_Comprehensive.md) | TID, Category, Description, Pre-conditions, Steps, Expected, Priority | ✅ "Needs clarification" |
+| 3 | [API Test Gen](Chapter_03_Prompt_Engineering_QA/reuse-templates/Template3_APITest_Gen.md) | Test ID, Endpoint, Method, Request Body, Expected Status, Expected Response | ✅ No undocumented behavior |
+| 4 | [Negative TC](Chapter_03_Prompt_Engineering_QA/reuse-templates/Template4_Negative_TC.md) | Test ID, Invalid Scenario, Input, Expected Error | ❌ Add it |
+| 5 | [Security TC](Chapter_03_Prompt_Engineering_QA/reuse-templates/Template5_Security_TC.md) | Test ID, Security Risk, Attack Vector, Expected Secure Behavior | ❌ Add it |
+| 6 | [Regression Suite](Chapter_03_Prompt_Engineering_QA/reuse-templates/Template6_Regression_Test_Suite.md) | Test ID, Scenario, Data Setup, Steps, Est. Time, Priority | ❌ Add it |
+
+**Code sample:** Template 4 filled in for the VWO login page, with the missing-info rule added. Paste it into any chat model.
+
+```text
+ROLE: You are a QA Engineer focused on negative testing.
+
+TASK: Generate negative test cases for the VWO login page (https://app.vwo.com/).
+
+FOCUS AREAS:
+- Invalid inputs
+- Missing required fields
+- Unauthorized access
+
+CONSTRAINTS:
+- Do NOT include happy path scenarios
+- Each test must validate error handling
+- Include expected error message if documented
+- If the expected behavior is not documented, write "Not specified"
+
+FORMAT:
+| Test ID | Invalid Scenario | Input | Expected Error |
+
+FEATURE REQUIREMENTS:
+- Email and password are mandatory.
+- Invalid credentials must not grant access.
+- Invalid login shows "Your email, password, IP address or location did not match"
+```
+
+**What to check:** the requirements give no message for empty fields, so the empty-email and empty-password rows should say "Not specified", not a made-up message like "Password is required".
 
 ---
 
