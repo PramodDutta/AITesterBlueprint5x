@@ -17,6 +17,7 @@ Hands-on course material from **The Testing Academy** for testers moving into AI
   - [02.1 · Anti-Hallucination Rules](#021--anti-hallucination-rules)
   - [03 · Prompt Frameworks for QA: STAR, CLEAR, CRISP](#03--prompt-frameworks-for-qa-star-clear-crisp)
   - [03.1 · Reusable QA Prompt Templates](#031--reusable-qa-prompt-templates)
+  - [03.2 · Context Files](#032--context-files)
 - [Learnings](#-learnings)
 
 ---
@@ -30,9 +31,10 @@ flowchart LR
     C2 --> C21["Ch 02.1 · Anti-Hallucination Rules<br/>verified facts only"]
     C21 --> C3["Ch 03 · Prompt Frameworks for QA<br/>STAR, CLEAR, CRISP -> plan, cases, bug"]
     C3 --> C31["Ch 03.1 · Reusable Prompt Templates<br/>6 fill-in-the-blank QA prompts"]
+    C31 --> C32["Ch 03.2 · Context Files<br/>project, feature, testing, constraints"]
 
     classDef done fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
-    class C0,C1,C2,C21,C3,C31 done
+    class C0,C1,C2,C21,C3,C31,C32 done
 ```
 
 ---
@@ -46,7 +48,8 @@ flowchart LR
 | 02 | [Prompt Engineering](Chapter_02_Prompt_Engineering/RICE_POT/) | A RICE-POT prompt turned into a Selenium + Java framework for the Salesforce login page, run headless and headed | Maven + TestNG + Allure | ✅ |
 | 02.1 | [Anti-Hallucination Rules](Chapter_02_Prompt_Engineering/anti-hallucination.rules.md) | A reusable rule block that limits a QA assistant to the input you give it and makes it report what is missing | Prompt rules (Markdown) | ✅ |
 | 03 | [Prompt Frameworks for QA](Chapter_03_Prompt_Engineering_QA/) | Three prompt frameworks for the VWO login page: STAR -> test plan, CLEAR -> 10 test cases, CRISP -> one bug report | Prompts (Markdown) + Word outputs | ✅ |
-| 03.1 | [Reusable QA Prompt Templates](Chapter_03_Prompt_Engineering_QA/reuse-templates/) | Six fill-in-the-blank prompts: basic, PRD-based, API, negative, security and regression test cases | Prompt templates (Markdown) | ✅ |
+| 03.1 | [Reusable QA Prompt Templates](Chapter_03_Prompt_Engineering_QA/01_reuse-templates/) | Six fill-in-the-blank prompts: basic, PRD-based, API, negative, security and regression test cases | Prompt templates (Markdown) | ✅ |
+| 03.2 | [Context Files](Chapter_03_Prompt_Engineering_QA/00_context-vwo/) | Four context files (project, feature, testing, constraints) you fill once and paste above any prompt | Context templates (Markdown) | ✅ |
 
 ---
 
@@ -91,7 +94,12 @@ AITesterBlueprint5x/
 │   ├── Template.md                          # test plan table of contents the STAR prompt fills
 │   ├── CLEAR.md                             # Context, Limits, Examples, Action, Review -> test cases
 │   ├── CRISP.md                             # Context, Role, Instructions, Style, Parameters -> bug report
-│   ├── reuse-templates/                     # 6 fill-in-the-blank QA prompts
+│   ├── 00_context-vwo/                      # context files pasted above any prompt
+│   │   ├── context_project.md               # app, tech stack, environment URLs
+│   │   ├── context_feature.md               # user stories, acceptance criteria, rules, errors
+│   │   ├── context_testing.md               # scope, test data, environment, known issues
+│   │   └── context_constraints.md           # MUST / MUST NOT rules and output markers
+│   ├── 01_reuse-templates/                  # 6 fill-in-the-blank QA prompts
 │   │   ├── Template1_Basic_TC_Gen.md        # [NUMBER] test cases for [FEATURE]
 │   │   ├── Template2_PRD_TC_Comprehensive.md    # PRD -> functional, negative, boundary, edge
 │   │   ├── Template3_APITest_Gen.md         # API docs -> status-code-based tests
@@ -456,7 +464,7 @@ Parameters: One report, under 500 words, placeholders for accounts,
 
 ### 03.1 · Reusable QA Prompt Templates
 
-**Concept:** [reuse-templates/](Chapter_03_Prompt_Engineering_QA/reuse-templates/) holds six short prompts you fill in and reuse. Each has the same four parts: ROLE, TASK, CONSTRAINTS and a fixed FORMAT table, plus a slot like `[PASTE REQUIREMENTS HERE]` for your input.
+**Concept:** [01_reuse-templates/](Chapter_03_Prompt_Engineering_QA/01_reuse-templates/) holds six short prompts you fill in and reuse. Each has the same four parts: ROLE, TASK, CONSTRAINTS and a fixed FORMAT table, plus a slot like `[PASTE REQUIREMENTS HERE]` for your input.
 
 **Why:** Writing a full STAR or CLEAR prompt for every small job is slow, so these give you a tested starting point for the six test-design jobs testers do most.
 
@@ -485,12 +493,12 @@ flowchart TD
 
 | # | Template | Output columns | Says what to do when info is missing? |
 |:-:|:---------|:---------------|:-------------------------------------:|
-| 1 | [Basic TC Gen](Chapter_03_Prompt_Engineering_QA/reuse-templates/Template1_Basic_TC_Gen.md) | Test ID, Description, Pre-conditions, Steps, Expected Result, Priority | ✅ "Not specified" |
-| 2 | [PRD TC Comprehensive](Chapter_03_Prompt_Engineering_QA/reuse-templates/Template2_PRD_TC_Comprehensive.md) | TID, Category, Description, Pre-conditions, Steps, Expected, Priority | ✅ "Needs clarification" |
-| 3 | [API Test Gen](Chapter_03_Prompt_Engineering_QA/reuse-templates/Template3_APITest_Gen.md) | Test ID, Endpoint, Method, Request Body, Expected Status, Expected Response | ✅ No undocumented behavior |
-| 4 | [Negative TC](Chapter_03_Prompt_Engineering_QA/reuse-templates/Template4_Negative_TC.md) | Test ID, Invalid Scenario, Input, Expected Error | ❌ Add it |
-| 5 | [Security TC](Chapter_03_Prompt_Engineering_QA/reuse-templates/Template5_Security_TC.md) | Test ID, Security Risk, Attack Vector, Expected Secure Behavior | ❌ Add it |
-| 6 | [Regression Suite](Chapter_03_Prompt_Engineering_QA/reuse-templates/Template6_Regression_Test_Suite.md) | Test ID, Scenario, Data Setup, Steps, Est. Time, Priority | ❌ Add it |
+| 1 | [Basic TC Gen](Chapter_03_Prompt_Engineering_QA/01_reuse-templates/Template1_Basic_TC_Gen.md) | Test ID, Description, Pre-conditions, Steps, Expected Result, Priority | ✅ "Not specified" |
+| 2 | [PRD TC Comprehensive](Chapter_03_Prompt_Engineering_QA/01_reuse-templates/Template2_PRD_TC_Comprehensive.md) | TID, Category, Description, Pre-conditions, Steps, Expected, Priority | ✅ "Needs clarification" |
+| 3 | [API Test Gen](Chapter_03_Prompt_Engineering_QA/01_reuse-templates/Template3_APITest_Gen.md) | Test ID, Endpoint, Method, Request Body, Expected Status, Expected Response | ✅ No undocumented behavior |
+| 4 | [Negative TC](Chapter_03_Prompt_Engineering_QA/01_reuse-templates/Template4_Negative_TC.md) | Test ID, Invalid Scenario, Input, Expected Error | ❌ Add it |
+| 5 | [Security TC](Chapter_03_Prompt_Engineering_QA/01_reuse-templates/Template5_Security_TC.md) | Test ID, Security Risk, Attack Vector, Expected Secure Behavior | ❌ Add it |
+| 6 | [Regression Suite](Chapter_03_Prompt_Engineering_QA/01_reuse-templates/Template6_Regression_Test_Suite.md) | Test ID, Scenario, Data Setup, Steps, Est. Time, Priority | ❌ Add it |
 
 **Code sample:** Template 4 filled in for the VWO login page, with the missing-info rule added. Paste it into any chat model.
 
@@ -520,6 +528,68 @@ FEATURE REQUIREMENTS:
 ```
 
 **What to check:** the requirements give no message for empty fields, so the empty-email and empty-password rows should say "Not specified", not a made-up message like "Password is required".
+
+---
+
+### 03.2 · Context Files
+
+**Concept:** [00_context-vwo/](Chapter_03_Prompt_Engineering_QA/00_context-vwo/) splits everything the model needs to know into four files you fill once per project and paste above any prompt: [project](Chapter_03_Prompt_Engineering_QA/00_context-vwo/context_project.md) (app, tech stack, URLs), [feature](Chapter_03_Prompt_Engineering_QA/00_context-vwo/context_feature.md) (stories, acceptance criteria, validation rules, error messages), [testing](Chapter_03_Prompt_Engineering_QA/00_context-vwo/context_testing.md) (scope, test data, environment) and [constraints](Chapter_03_Prompt_Engineering_QA/00_context-vwo/context_constraints.md) (MUST / MUST NOT rules).
+
+**Why:** The templates in 03.1 are only as good as what you paste into them, and retyping the app, rules and test data for every prompt leads to gaps the model fills by guessing.
+
+**Q&A: why use this?**
+- **Q: When do I reach for it?** A: Once per project or feature. Fill the four files, then stack them above any 03.1 template or STAR / CLEAR / CRISP prompt: project, feature, testing, constraints, then the task.
+- **Q: What does it replace?** A: The "Context" paragraph you rewrite in every prompt, and the missing-info rule that Templates 4 to 6 lack: `context_constraints.md` adds "Not specified in requirements", "[NEEDS CLARIFICATION]" and "[ASSUMPTION]" to any prompt.
+- **Q: What's the gotcha?** A: Three of the four files are still blank templates, and their sample rows look real (`Email: Valid format required`, `400 | ...`, `test@example.com`). Delete any row you did not fill, or the model will treat it as a requirement.
+
+```mermaid
+flowchart TD
+    P["context_project.md<br/>app, stack, URLs"] --> S["Stacked context"]
+    F["context_feature.md<br/>stories, criteria, rules, errors"] --> S
+    T["context_testing.md<br/>scope, data, environment"] --> S
+    C["context_constraints.md<br/>MUST / MUST NOT, markers"] --> S
+    S --> X["+ any task prompt<br/>03.1 template, STAR, CLEAR, CRISP"]
+    X --> O["Output marked with<br/>[NEEDS CLARIFICATION] / [ASSUMPTION]"]
+
+    classDef guard fill:#fff3e0,stroke:#ef6c00,color:#e65100
+    class C guard
+```
+
+**What each file holds**
+
+| File | Fill in | Filled for VWO yet? |
+|:-----|:--------|:-------------------:|
+| `context_project.md` | Name, type, domain, tech stack, dev / staging / prod URLs, key constraints | ❌ Template |
+| `context_feature.md` | Overview, user stories, acceptance criteria, API endpoints, UI elements, validation rules, error messages | ❌ Template |
+| `context_testing.md` | In / out of scope, test data table, browser / device / OS, dependencies, known issues | ❌ Template |
+| `context_constraints.md` | Use only provided documents, no invented errors, endpoints or validation, mark gaps and assumptions | ✅ Ready to use |
+
+**Code sample:** `context_feature.md` filled for the VWO login page from the Chapter 03 requirements, followed by the constraints and a task. Rows with no source are deleted, not guessed.
+
+```markdown
+# Feature Context: VWO Login
+
+## Overview
+Login page at https://app.vwo.com/ for registered users.
+
+## Acceptance Criteria
+- [ ] Registered users can log in with valid credentials.
+- [ ] Invalid credentials must not grant access and show an error.
+- [ ] Email and password are mandatory.
+- [ ] Successful login opens the authenticated dashboard.
+
+## Error Messages
+| Code | Message |
+|------|---------|
+| Not specified in requirements | Your email, password, IP address or location did not match |
+
+# Constraints & Rules
+(paste context_constraints.md here)
+
+TASK: Generate 8 test cases for VWO Login using Template 1's format.
+```
+
+**What to check:** the empty-field message is not in the context, so those rows must say "Not specified in requirements" or "[NEEDS CLARIFICATION]", and every "[ASSUMPTION]" in the output is a question for the Product Owner.
 
 ---
 
