@@ -18,6 +18,8 @@ Hands-on course material from **The Testing Academy** for testers moving into AI
   - [03 · Prompt Frameworks for QA: STAR, CLEAR, CRISP](#03--prompt-frameworks-for-qa-star-clear-crisp)
   - [03.1 · Reusable QA Prompt Templates](#031--reusable-qa-prompt-templates)
   - [03.2 · Context Files](#032--context-files)
+  - [04 · Jira Test Plan AI Agent (vibe-coded app)](#04--jira-test-plan-ai-agent-vibe-coded-app)
+  - [05 · n8n Jira Test Plan Agent](#05--n8n-jira-test-plan-agent)
 - [Learnings](#-learnings)
 
 ---
@@ -32,9 +34,11 @@ flowchart LR
     C21 --> C3["Ch 03 · Prompt Frameworks for QA<br/>STAR, CLEAR, CRISP -> plan, cases, bug"]
     C3 --> C31["Ch 03.1 · Reusable Prompt Templates<br/>6 fill-in-the-blank QA prompts"]
     C31 --> C32["Ch 03.2 · Context Files<br/>project, feature, testing, constraints"]
+    C32 --> C4["Ch 04 · Jira Test Plan AI Agent<br/>React + Express app on Vercel"]
+    C4 --> C5["Ch 05 · n8n Jira Agent<br/>same job, no-code workflow"]
 
     classDef done fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
-    class C0,C1,C2,C21,C3,C31,C32 done
+    class C0,C1,C2,C21,C3,C31,C32,C4,C5 done
 ```
 
 ---
@@ -50,6 +54,8 @@ flowchart LR
 | 03 | [Prompt Frameworks for QA](Chapter_03_Prompt_Engineering_QA/) | Three prompt frameworks for the VWO login page: STAR -> test plan, CLEAR -> 10 test cases, CRISP -> one bug report | Prompts (Markdown) + Word outputs | ✅ |
 | 03.1 | [Reusable QA Prompt Templates](Chapter_03_Prompt_Engineering_QA/01_reuse-templates/) | Six fill-in-the-blank prompts: basic, PRD-based, API, negative, security and regression test cases | Prompt templates (Markdown) | ✅ |
 | 03.2 | [Context Files](Chapter_03_Prompt_Engineering_QA/00_context-vwo/) | Four context files (project, feature, testing, constraints) you fill once and paste above any prompt | Context templates (Markdown) | ✅ |
+| 04 | [Jira Test Plan AI Agent](Chapter_04_AI_Agents_Basics/VIBE_CODING/01_Intelligent_Test_Planning_AIAgent/) | A web app vibe-coded from a RICE-POT prompt: enter a Jira ID, get a test plan built on the template. [Live demo](https://ai5x-testplanaigent.vercel.app) | React + Express + Groq / Ollama, on Vercel | ✅ |
+| 05 | [n8n Jira Test Plan Agent](Chapter_05_AIAgents_n8n/01_JIRAAIAgent.json) | The same Jira -> test plan job as a 4-node n8n workflow: chat trigger, AI Agent, Groq model, Jira tool | n8n workflow export (JSON) | ✅ |
 
 ---
 
@@ -110,6 +116,20 @@ AITesterBlueprint5x/
 │       ├── VWO_Login_Test_Plan.md / .docx   # STAR output (Markdown source + Word)
 │       ├── VWO_Login_Test_Cases.docx        # CLEAR output: 10 cases, all "Not Run"
 │       └── VWO_Login_Bug_Report.docx        # CRISP output: hypothetical training bug
+├── Chapter_04_AI_Agents_Basics/VIBE_CODING/
+│   ├── 01_Intelligent_Test_Planning_AIAgent/
+│   │   ├── 00_design/image.png              # wireframe: main page + settings
+│   │   ├── 01_plan/                         # TestPlan_Template.md, RICEPOT_Framework.md
+│   │   └── 02_Implementation/               # the app (see its README)
+│   │       ├── prompt_TP_Creator.md         # RICE-POT prompt the app was built from
+│   │       ├── api/index.js                 # Vercel serverless entry
+│   │       ├── src/backend/                 # Express: config, Jira, LLM, prompt, mocked tests
+│   │       ├── src/frontend/                # React: main page, settings, .env loader
+│   │       └── vercel.json
+│   ├── 02_Test_Strategy_Builder_AIAgent/    # next agent (empty)
+│   └── 03_Test_Case_CreationAI_Agent/       # next agent (empty)
+├── Chapter_05_AIAgents_n8n/
+│   └── 01_JIRAAIAgent.json                  # n8n workflow: chat -> agent -> Groq + Jira tool
 ├── learnings/                               # one-page approach notes per solved problem
 ├── output/                                  # generated test plans (HTML + PDF)
 └── .env                                     # Jira credentials, git-ignored
@@ -136,6 +156,12 @@ EOF
 # Chapter 02: needs Java 17+, Maven and Chrome (Selenium Manager downloads the driver)
 cd Chapter_02_Prompt_Engineering/RICE_POT/SeleniumFramework
 mvn clean test
+
+# Chapter 04: needs Node 22+; reads Jira + GROQ_API_KEY from the root .env
+cd Chapter_04_AI_Agents_Basics/VIBE_CODING/01_Intelligent_Test_Planning_AIAgent/02_Implementation
+npm install && npm start      # http://localhost:3000
+
+# Chapter 05: n8n -> Workflows -> Import from file -> Chapter_05_AIAgents_n8n/01_JIRAAIAgent.json
 ```
 
 ---
@@ -593,6 +619,115 @@ TASK: Generate 8 test cases for VWO Login using Template 1's format.
 
 ---
 
+### 04 · Jira Test Plan AI Agent (vibe-coded app)
+
+**Concept:** A small web app built entirely from one RICE-POT prompt ([prompt_TP_Creator.md](Chapter_04_AI_Agents_Basics/VIBE_CODING/01_Intelligent_Test_Planning_AIAgent/02_Implementation/prompt_TP_Creator.md)), a wireframe ([00_design](Chapter_04_AI_Agents_Basics/VIBE_CODING/01_Intelligent_Test_Planning_AIAgent/00_design/image.png)) and a template ([TestPlan_Template.md](Chapter_04_AI_Agents_Basics/VIBE_CODING/01_Intelligent_Test_Planning_AIAgent/01_plan/TestPlan_Template.md)). You type a Jira ID, the backend reads the issue (read-only), Groq or Ollama fills the template, and the plan appears in the browser. Live at **https://ai5x-testplanaigent.vercel.app**.
+
+**Why:** Chapters 00 to 03 give the model good prompts by hand. This chapter wraps the same idea in an app, so a tester only types `VWO-140` and gets a draft plan with the same sections every time.
+
+**Q&A: why use this?**
+- **Q: When do I reach for it?** A: When the requirement already lives in a Jira ticket and you want a first-draft plan in seconds. Anything the ticket does not say comes back as "Insufficient information to determine." and a question in the Gaps table.
+- **Q: What does it replace?** A: Copying the ticket into a chat window and pasting the template by hand. The app also checks that every `##` section of the template is in the answer and warns if one is missing.
+- **Q: What's the gotcha?** A: Output wording changes between runs even at temperature 0, and the model can still slip in an assumption. Every plan is a DRAFT behind the template's Human Review Gate. The hosted demo also uses the owner's Jira and Groq keys by default, so treat the link as private.
+
+```mermaid
+sequenceDiagram
+    participant U as Tester (browser)
+    participant A as Express API (Vercel)
+    participant J as Jira Cloud
+    participant L as Groq / Ollama
+    U->>A: POST /api/generate { issueKey, config }
+    A->>A: validate key, merge config over server defaults
+    A->>J: GET /rest/api/3/issue/VWO-140 (read-only)
+    J-->>A: summary, description (ADF), acceptance criteria, sprint
+    A->>L: template + issue wrapped as data (jira_issue tags), temperature 0
+    L-->>A: filled test plan (Markdown)
+    A->>A: check all template sections present
+    A-->>U: plan + source link + warnings
+```
+
+| Piece | Where | Note |
+|:------|:------|:-----|
+| Settings | Browser memory, sent per request | Paste or upload a `.env`; never stored in browser storage |
+| Server defaults | Root `.env` (local) or Vercel env vars | API returns only masked hints like `t***@gmail.com` |
+| Jira token safety | `resolveSettings()` | Server token is never sent to a URL the user typed |
+| Tests | `npm test` | 16 mocked tests; live checks listed in the app README |
+
+**Code sample:** the rule that keeps the server's Jira token away from a user-supplied URL ([config.js](Chapter_04_AI_Agents_Basics/VIBE_CODING/01_Intelligent_Test_Planning_AIAgent/02_Implementation/src/backend/config.js)).
+
+```js
+export function resolveSettings(input, defaults = serverDefaults) {
+  const v = (k) => (input && typeof input[k] === 'string' ? input[k].trim() : '');
+  const s = { ...defaults };
+
+  if (v('jiraToken')) {
+    // the user brought their own token: use their URL + email + token together
+    s.jiraBaseUrl = trimUrl(v('jiraBaseUrl'));
+    s.jiraEmail = v('jiraEmail');
+    s.jiraToken = v('jiraToken');
+    if (s.jiraBaseUrl && !JIRA_URL_RE.test(s.jiraBaseUrl)) {
+      throw new HttpError(400, 'Jira URL must look like https://your-domain.atlassian.net (Jira Cloud).');
+    }
+  } else if ((v('jiraBaseUrl') && trimUrl(v('jiraBaseUrl')) !== defaults.jiraBaseUrl)
+          || (v('jiraEmail') && v('jiraEmail') !== defaults.jiraEmail)) {
+    throw new HttpError(400, 'You changed the Jira URL or email, so enter the matching Jira API token too.');
+  }
+  if (v('groqApiKey')) s.groqApiKey = v('groqApiKey');
+  if (['groq', 'ollama'].includes(v('provider'))) s.provider = v('provider');
+  return s;
+}
+```
+
+**What to check:** generate a plan for a thin ticket (like a one-line bug) and confirm sections 7 and 8 say "Insufficient information to determine." instead of made-up names and dates. Full setup, verification and limits are in the [app README](Chapter_04_AI_Agents_Basics/VIBE_CODING/01_Intelligent_Test_Planning_AIAgent/02_Implementation/README.md).
+
+---
+
+### 05 · n8n Jira Test Plan Agent
+
+**Concept:** [01_JIRAAIAgent.json](Chapter_05_AIAgents_n8n/01_JIRAAIAgent.json) is an n8n workflow export that does Chapter 04's job with no code: a **chat trigger** passes your message to an **AI Agent** node, which uses a **Groq** model (`openai/gpt-oss-120b`) and calls a **Jira tool** to fetch the issue before writing the plan.
+
+**Why:** Chapter 04 hard-codes the steps (fetch, then generate). Here the agent decides when to call the Jira tool, which is the core idea of an AI agent: a model plus tools plus a goal.
+
+**Q&A: why use this?**
+- **Q: When do I reach for it?** A: When you want to change prompts, models or tools by clicking, or add steps (post to Slack, save to Drive) without writing code.
+- **Q: What does it replace?** A: Chapter 04's backend. The `$fromAI('Issue_Key')` expression lets the model fill in the issue key from your chat message, so there is no input parsing code.
+- **Q: What's the gotcha?** A: Credentials are not in the export. After import, attach your own "Groq account" and "Jira SW Cloud account" credentials. The chat trigger is set to `public: true`, so anyone with its URL can use your Jira and Groq; turn that off unless you mean to share it.
+
+```mermaid
+flowchart LR
+    T["When chat message received<br/>chatTrigger"] --> A["AI Agent<br/>RICE-POT system message"]
+    M["Groq Chat Model<br/>openai/gpt-oss-120b"] -. language model .-> A
+    J["Get an issue in Jira Software<br/>jiraTool, operation: get"] -. tool .-> A
+    A --> O["Test plan in the chat reply"]
+
+    classDef guard fill:#fff3e0,stroke:#ef6c00,color:#e65100
+    class J guard
+```
+
+| | Ch 04 app | Ch 05 n8n |
+|:--|:--|:--|
+| Who decides to call Jira | The code, always first | The agent, as a tool call |
+| Change the prompt | Edit `prompt.js`, redeploy | Edit the AI Agent node |
+| Template check / tests | Yes (section check, 16 tests) | No |
+
+**Code sample:** the Jira tool node from the export. The model supplies `Issue_Key` at run time.
+
+```json
+{
+  "name": "Get an issue in Jira Software",
+  "type": "n8n-nodes-base.jiraTool",
+  "parameters": {
+    "operation": "get",
+    "issueKey": "={{ $fromAI('Issue_Key', ``, 'string') }}",
+    "additionalFields": {}
+  }
+}
+```
+
+**What to check:** send "Create a test plan for VWO-140" and open the execution log. The Jira tool should run once with `Issue_Key = VWO-140` before the agent answers.
+
+---
+
 ## 🧠 Learnings
 
 [learnings/](learnings/) holds one-page notes on how a non-trivial problem was solved: the approach, the judgment calls, and one reusable rule.
@@ -601,3 +736,5 @@ TASK: Generate 8 test cases for VWO Login using Template 1's format.
 |:-----|:-----|
 | 2026-10-25 | [Jira ticket to review-ready test plan PDF](learnings/2026-10-25-jira-ticket-to-test-plan-pdf.md) |
 | 2026-11-01 | [Salesforce login Selenium framework from a RICE-POT prompt](learnings/2026-11-01-salesforce-login-selenium-from-rice-pot.md) |
+| 2026-11-15 | [Jira 401 from a malformed API token in .env](learnings/2026-11-15-jira-401-malformed-token.md) |
+| 2026-11-15 | [Moving a settings-page app to a public serverless host](learnings/2026-11-15-serverless-per-request-credentials.md) |
