@@ -1,5 +1,7 @@
 # 🤖 AI Tester Blueprint 5x
 
+![AI Tester Blueprint 5x: prompts, then skills, then AI agents for QA](images/ai-tester-blueprint-5x-hero.png)
+
 Hands-on course material from **The Testing Academy** for testers moving into AI: build Agent Skills that do real QA work, then learn how the LLMs behind them actually behave, so you can test them.
 
 ---
@@ -24,6 +26,8 @@ Hands-on course material from **The Testing Academy** for testers moving into AI
   - [05.2 · n8n Bug Triage Agent](#052--n8n-bug-triage-agent)
   - [05.3 · n8n Triage Comment Workflow](#053--n8n-triage-comment-workflow)
   - [05.4 · n8n Auto Triage on New Jira Issues](#054--n8n-auto-triage-on-new-jira-issues)
+  - [05.5 · n8n RCA Agent (work in progress)](#055--n8n-rca-agent-work-in-progress)
+  - [06 · n8n Flaky Test Case Finder](#06--n8n-flaky-test-case-finder)
 - [Learnings](#-learnings)
 
 ---
@@ -44,9 +48,13 @@ flowchart LR
     C51 --> C52["Ch 05.2 · Bug Triage Agent<br/>fetch, rate, confirm, update"]
     C52 --> C53["Ch 05.3 · Triage Comment Workflow<br/>fixed pipeline, posts a comment"]
     C53 --> C54["Ch 05.4 · Auto Triage<br/>runs on every new Jira issue"]
+    C54 --> C55["Ch 05.5 · RCA Agent<br/>commits + errors -> root cause"]
+    C55 --> C6["Ch 06 · Flaky Test Finder<br/>two build runs -> flaky list"]
 
     classDef done fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef wip fill:#fff3e0,stroke:#ef6c00,color:#e65100
     class C0,C1,C2,C21,C3,C31,C32,C4,C5,C51,C52,C53,C54 done
+    class C55,C6 wip
 ```
 
 ---
@@ -68,6 +76,10 @@ flowchart LR
 | 05.2 | [n8n Bug Triage Agent](Chapter_05_AIAgents_n8n/03_BugTriage_AIAgent/) | Give a VWO bug key; the agent fetches it, proposes Severity, Priority and Risk with quoted reasons, and updates Jira after you approve | n8n export (JSON) + build plan (Markdown) | ✅ |
 | 05.3 | [n8n Triage Comment Workflow](Chapter_05_AIAgents_n8n/03_BugTriage_AIAgent/05_BugTraige_withComments.json) | A fixed 5-step pipeline: chat key -> Jira Get -> LLM returns severity, priority, comments as JSON -> comment posted on the ticket | n8n workflow export (JSON) | ✅ |
 | 05.4 | [n8n Auto Triage on New Jira Issues](Chapter_05_AIAgents_n8n/04_BugTriage_Schedule/) | The same pipeline started by a Jira webhook, so every newly created issue gets an AI triage comment with no one asking | n8n workflow export (JSON) | ✅ |
+| 05.5 | [n8n RCA Agent](Chapter_05_AIAgents_n8n/06_RCA_AIAgent/) | A Jira issue labelled `perform_rca` starts an agent with GitHub-commits and Sentry-event tools, which writes the root cause back to the ticket | n8n workflow export (JSON), skeleton | 🚧 |
+| 06 | [n8n Flaky Test Case Finder](Chapter_06_FlakyTCFinder/) | Upload two build-run reports in an n8n form; the AI lists the tests that passed in one run and failed in the other, and sends the list to Slack | n8n workflow export (JSON) | 🚧 |
+
+✅ ready to import and run · 🚧 work in progress: some nodes still need settings (each section lists which)
 
 ---
 
@@ -141,7 +153,7 @@ AITesterBlueprint5x/
 │   ├── 02_Test_Strategy_Builder_AIAgent/    # next agent (empty)
 │   └── 03_Test_Case_CreationAI_Agent/       # next agent (empty)
 ├── Chapter_05_AIAgents_n8n/
-│   ├── images/ch05-n8n-qa-agents.png        # chapter banner: the three agents
+│   ├── images/                              # ch05-n8n-qa-agents.png (banner), ch05-rca-agent.png
 │   ├── 01_JIRA_AI_AGENT/
 │   │   └── 01_JIRAAIAgent.json              # chat -> agent -> Groq + Jira Get -> test plan
 │   ├── 02_CreateJIRA_AIAgent/
@@ -151,8 +163,14 @@ AITesterBlueprint5x/
 │   │   ├── Plan.md                          # triage rubric, prompts, tool settings, test checklist
 │   │   ├── 04_BugTriageAIAgent.json.json    # chat -> agent + memory -> Jira Get + Jira Update
 │   │   └── 05_BugTraige_withComments.json   # chat -> regex key -> Jira Get -> LLM JSON -> POST comment
-│   └── 04_BugTriage_Schedule/
-│       └── 06_BugTraige_JIRASchedule.json   # Jira "issue created" webhook -> same pipeline
+│   ├── 04_BugTriage_Schedule/
+│   │   └── 06_BugTraige_JIRASchedule.json   # Jira "issue created" webhook -> same pipeline
+│   └── 06_RCA_AIAgent/
+│       └── 06_RCA_AIAgent.json              # Jira label perform_rca -> agent + GitHub + Sentry -> Jira update
+├── Chapter_06_FlakyTCFinder/
+│   ├── images/ch06-flaky-test-finder.png    # chapter banner
+│   └── 08_FlakyTestCaseAIAgent.json         # form: 2 build files -> AI compare -> Slack / Teams / email
+├── images/ai-tester-blueprint-5x-hero.png   # README hero banner
 ├── learnings/                               # one-page approach notes per solved problem
 ├── output/                                  # generated test plans (HTML + PDF)
 └── .env                                     # Jira credentials, git-ignored
@@ -190,8 +208,12 @@ npm install && npm start      # http://localhost:3000
 #   Chapter_05_AIAgents_n8n/03_BugTriage_AIAgent/04_BugTriageAIAgent.json.json
 #   Chapter_05_AIAgents_n8n/03_BugTriage_AIAgent/05_BugTraige_withComments.json
 #   Chapter_05_AIAgents_n8n/04_BugTriage_Schedule/06_BugTraige_JIRASchedule.json
+#   Chapter_05_AIAgents_n8n/06_RCA_AIAgent/06_RCA_AIAgent.json          (skeleton, see 05.5)
 # then attach your own Jira + LLM credentials to each workflow
 # (05.3 and 05.4 also hard-code the Jira site in the HTTP Request URL; change it to yours)
+
+# Chapter 06: same import, then attach OpenAI + Slack credentials and open the form URL
+#   Chapter_06_FlakyTCFinder/08_FlakyTestCaseAIAgent.json
 ```
 
 ---
@@ -716,7 +738,7 @@ export function resolveSettings(input, defaults = serverDefaults) {
 
 ![Chapter 05: three n8n AI agents for QA, a test plan agent, a bug reporter agent and a bug triage agent](Chapter_05_AIAgents_n8n/images/ch05-n8n-qa-agents.png)
 
-Chapter 05 builds three n8n agents on the same pattern (chat trigger, AI Agent, model, Jira tools), each one step further: **05** only reads Jira, **05.1** creates a ticket, **05.2** reads and then updates one. Both write agents show a preview and wait for your "yes" first. Then **05.3** and **05.4** flip the design: a fixed pipeline where the wiring, not the model, decides each step, and the model only writes the triage text. 05.4 runs by itself whenever a new Jira issue is created.
+Chapter 05 builds three n8n agents on the same pattern (chat trigger, AI Agent, model, Jira tools), each one step further: **05** only reads Jira, **05.1** creates a ticket, **05.2** reads and then updates one. Both write agents show a preview and wait for your "yes" first. Then **05.3** and **05.4** flip the design: a fixed pipeline where the wiring, not the model, decides each step, and the model only writes the triage text. 05.4 runs by itself whenever a new Jira issue is created. **05.5** goes back to an agent, this time with tools outside Jira (GitHub commits, Sentry errors) for root cause analysis.
 
 **Concept:** [01_JIRAAIAgent.json](Chapter_05_AIAgents_n8n/01_JIRA_AI_AGENT/01_JIRAAIAgent.json) is an n8n workflow export that does Chapter 04's job with no code: a **chat trigger** passes your message to an **AI Agent** node, which uses a **Groq** model (`openai/gpt-oss-120b`) and calls a **Jira tool** to fetch the issue before writing the plan.
 
@@ -987,16 +1009,140 @@ https://<your-site>.atlassian.net/rest/api/3/issue/{{ $('Edit Fields').item.json
 
 **What to check:** with the workflow active, create one test bug in Jira and watch the n8n executions list: exactly one run should start and one comment should appear. Posting that comment does not re-trigger the workflow, because it listens only for `issue_created`.
 
+---
+
+### 05.5 · n8n RCA Agent (work in progress)
+
+![RCA AI Agent: a Jira ticket labelled perform_rca goes to an AI agent that checks the latest commits and the error event, then writes the root cause to Jira](Chapter_05_AIAgents_n8n/images/ch05-rca-agent.png)
+
+**Concept:** [06_RCA_AIAgent.json](Chapter_05_AIAgents_n8n/06_RCA_AIAgent/06_RCA_AIAgent.json) (named `07_RCA_AIAgent` inside n8n) is the skeleton of a **root cause analysis** agent. A Jira Trigger fires on `issue_created` only for issues labelled `perform_rca`, an AI Agent investigates with two tools (a GitHub tool for the latest commits, a Sentry.io tool for the error event), and a Jira **Update an issue** node writes the result back.
+
+**Why:** A root cause needs evidence the ticket does not hold (what changed in the code, what error was raised), so this agent gets tools for both instead of guessing from the ticket text.
+
+**Q&A: why use this?**
+- **Q: When do I reach for it?** A: When a production bug needs "what changed and what broke" before a developer picks it up. The reporter opts in by adding the `perform_rca` label.
+- **Q: What does it replace?** A: Opening the repo's recent commits and the Sentry event by hand for each bug. The JQL filter `labels="perform_rca"` is also the fix for 05.4's gotcha: only tickets someone chose are processed, not every new issue.
+- **Q: What's the gotcha?** A: The export is a skeleton and is inactive. Several nodes are still on their defaults; the table below lists what each one needs before the first run.
+
+```mermaid
+flowchart LR
+    T["Jira Trigger<br/>issue_created<br/>JQL: labels = perform_rca"] --> A["AI Agent<br/>RCA prompt (to write)"]
+    M["OpenAI Chat Model<br/>gpt-5-mini"] -. language model .-> A
+    G["get lastest Commits<br/>GitHub tool"] -. tool .-> A
+    S["Get an event in Sentry.io<br/>Sentry tool"] -. tool .-> A
+    A --> U["Update an issue<br/>Jira node: update"]
+    C["When chat message received<br/>(not connected)"]
+
+    classDef ready fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef todo fill:#fff3e0,stroke:#ef6c00,color:#e65100
+    class T ready
+    class A,G,S,U todo
+```
+
+| Node | In the export | Needed before the first run |
+|:--|:--|:--|
+| Jira Trigger | `issue_created`, filter `labels="perform_rca"`, Jira credential set | Ready |
+| AI Agent | No system message; prompt left on the default, which reads `chatInput`, a field the Jira webhook does not send | Prompt "Define below" with the trigger's key, summary and description, plus an RCA system message |
+| get lastest Commits | GitHub node defaults (empty owner and repository; the empty `labels` / `assignees` belong to Issue -> Create, so it would create an issue, not read commits) and no credential | GitHub credential, owner, repo and a read operation. If your node version has no commits operation, use an HTTP Request tool on `GET https://api.github.com/repos/OWNER/REPO/commits?per_page=10` |
+| Get an event in Sentry.io | No parameters, no credential | Sentry credential, organization, project, event ID (from the ticket, for example through `$fromAI`) |
+| OpenAI Chat Model | `gpt-5-mini`, credential not attached | Your OpenAI credential |
+| Update an issue | No issue key, no fields | Key `{{ $('Jira Trigger').item.json.issue.key }}` and a field for the RCA (a comment, as in 05.3, keeps the description safe) |
+| When chat message received | Not connected | Delete it, or connect it for manual testing |
+
+**Code sample:** the trigger from the export. The `filter` is a JQL query, so the label check happens in Jira before n8n is called.
+
+```json
+{
+  "name": "Jira Trigger",
+  "type": "n8n-nodes-base.jiraTrigger",
+  "parameters": {
+    "events": ["jira:issue_created"],
+    "additionalFields": {
+      "filter": "labels=\"perform_rca\""
+    }
+  }
+}
+```
+
+**What to check:** once the nodes are filled in, create two test bugs, one with the `perform_rca` label and one without. Only the labelled one should start an execution, and its RCA must name the commits or event it used, or say "Insufficient information to determine."
+
 #### Chapter 05 workflows side by side
 
-| | 05 Test Plan | 05.1 Bug Reporter | 05.2 Bug Triage | 05.3 Triage Comment | 05.4 Auto Triage |
-|:--|:--|:--|:--|:--|:--|
-| Starts from | Chat | Chat | Chat | Chat | Jira: issue created |
-| Shape | Agent + tool | Agent + tool | Agent + 2 tools | Fixed pipeline | Fixed pipeline |
-| Jira access | Get | Create | Get + Update | Get + POST comment | Get + POST comment |
-| Memory | No | Simple Memory (10) | Simple Memory | No | No |
-| Writes to Jira | Never | After "yes" | After "yes" | At once (comment) | Every new issue (comment) |
-| Model in export | Groq `openai/gpt-oss-120b` | OpenAI `gpt-5-mini` | OpenAI `gpt-5-mini` | OpenAI `gpt-5-mini` | OpenAI `gpt-5-mini` |
+| | 05 Test Plan | 05.1 Bug Reporter | 05.2 Bug Triage | 05.3 Triage Comment | 05.4 Auto Triage | 05.5 RCA (WIP) |
+|:--|:--|:--|:--|:--|:--|:--|
+| Starts from | Chat | Chat | Chat | Chat | Jira: issue created | Jira: issue created + label `perform_rca` |
+| Shape | Agent + tool | Agent + tool | Agent + 2 tools | Fixed pipeline | Fixed pipeline | Agent + 2 tools (GitHub, Sentry) |
+| Jira access | Get | Create | Get + Update | Get + POST comment | Get + POST comment | Update (node after the agent) |
+| Memory | No | Simple Memory (10) | Simple Memory | No | No | No |
+| Writes to Jira | Never | After "yes" | After "yes" | At once (comment) | Every new issue (comment) | Every labelled issue |
+| Model in export | Groq `openai/gpt-oss-120b` | OpenAI `gpt-5-mini` | OpenAI `gpt-5-mini` | OpenAI `gpt-5-mini` | OpenAI `gpt-5-mini` | OpenAI `gpt-5-mini` |
+
+---
+
+### 06 · n8n Flaky Test Case Finder
+
+![Flaky Test Finder: two build-run reports go to an AI compare step, which lists the flaky tests and sends them to Slack, Teams and email](Chapter_06_FlakyTCFinder/images/ch06-flaky-test-finder.png)
+
+**Concept:** [08_FlakyTestCaseAIAgent.json](Chapter_06_FlakyTCFinder/08_FlakyTestCaseAIAgent.json) is an n8n form titled "Flaky TestCase Finder" with two file fields, **Build Run 1** and **Build Run 2**. A Code node reads both uploads as text, an AI Agent compares the runs and answers with JSON (`total_tc` and a `flaky_tc` list of test titles), and the answer goes out to Slack, Microsoft Teams and email.
+
+**Why:** A flaky test passes in one run and fails in another with no code change. Spotting those flips across two long reports by eye is slow, so the comparison goes to the model.
+
+**Q&A: why use this?**
+- **Q: When do I reach for it?** A: When two runs of the same build disagree and you want the list of tests that flipped, sent to where the team already reads.
+- **Q: What does it replace?** A: Diffing two result files by hand. The Code node is the key step: form uploads reach n8n as binary data and the agent reads only text, so it turns both files into `build_run_1` and `build_run_2` strings, and fails with a clear error if fewer than two files arrive.
+- **Q: What's the gotcha?** A: Two runs only show pass/fail flips. A test that failed both times is broken, not flaky, and a flip between different commits may be a real regression, so compare runs of the same commit. The model also does the counting, so check `total_tc` against the report.
+
+```mermaid
+flowchart LR
+    F["On form submission<br/>Build Run 1 + Build Run 2 files"] --> C["Merge Files into Text<br/>Code node"]
+    C --> A["Perform the Flaky Anaysis<br/>AI Agent -> JSON"]
+    M["OpenAI Chat Model<br/>gpt-5-mini"] -. language model .-> A
+    A --> SL["Send a message<br/>Slack DM"]
+    A --> TM["Create chat<br/>Microsoft Teams"]
+    A --> EM["Send an Email"]
+    S["Schedule Trigger"] -.-> J["Fetch the Jenkins Console Details<br/>HTTP Request (placeholder URL)"]
+
+    classDef todo fill:#fff3e0,stroke:#ef6c00,color:#e65100
+    class TM,EM,S,J todo
+```
+
+| Part | State in the export |
+|:--|:--|
+| Form -> Code -> AI Agent -> Slack | Wired. After import, attach OpenAI and Slack credentials and pick your own Slack user or channel (the export targets one fixed user) |
+| Teams "Create chat" and "Send an Email" | Connected to the agent but have no settings or credentials yet; configure or delete them before activating |
+| Schedule Trigger -> Jenkins HTTP Request | The planned automatic path: the URL is still `<__PLACEHOLDER_VALUE__Jenkins console/report URL__>` and the branch ends there |
+
+**Code sample:** the Code node that turns the two uploads into prompt text ([08_FlakyTestCaseAIAgent.json](Chapter_06_FlakyTCFinder/08_FlakyTestCaseAIAgent.json)).
+
+```js
+const item = $input.first();
+const binary = item.binary || {};
+const keys = Object.keys(binary).sort();
+if (keys.length < 2) {
+  throw new Error('Expected 2 uploaded files, got ' + keys.length + ': ' + keys.join(', '));
+}
+const parts = [];
+for (const key of keys) {
+  const buf = await this.helpers.getBinaryDataBuffer(0, key);
+  parts.push({ key: key, fileName: binary[key].fileName || key, text: buf.toString('utf8') });
+}
+const merged = parts
+  .map((p, i) => '===== Build Run ' + (i + 1) + ' (' + p.fileName + ') =====\n' + p.text)
+  .join('\n\n');
+const file = await this.helpers.prepareBinaryData(Buffer.from(merged, 'utf8'), 'merged_builds.txt', 'text/plain');
+return [{
+  json: {
+    build_run_1_file: parts[0].fileName,
+    build_run_2_file: parts[1].fileName,
+    build_run_1: parts[0].text,
+    build_run_2: parts[1].text,
+    merged_text: merged
+  },
+  binary: { data: file }
+}];
+```
+
+**What to check:** upload two small reports where exactly one test passes in run 1 and fails in run 2. `flaky_tc` should hold that one title, and a test that failed in both runs must not appear. Then submit only one file: the run should stop with "Expected 2 uploaded files, got 1".
 
 ---
 

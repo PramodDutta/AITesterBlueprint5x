@@ -1,0 +1,210 @@
+{
+  "name": "07_RCA_AIAgent",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        -496,
+        -112
+      ],
+      "id": "a111b272-ec62-493a-899f-1d030ae8c6ca",
+      "name": "When chat message received",
+      "webhookId": "8ae5fa4f-57fd-40f1-89b6-74e1a6b09b74"
+    },
+    {
+      "parameters": {
+        "events": [
+          "jira:issue_created"
+        ],
+        "additionalFields": {
+          "filter": "labels=\"perform_rca\""
+        }
+      },
+      "type": "n8n-nodes-base.jiraTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -208,
+        -48
+      ],
+      "id": "a9d95780-b220-4c36-be20-c72afa7e6231",
+      "name": "Jira Trigger",
+      "webhookId": "51295d87-11e5-4fd9-960f-556792ae9fe6",
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "fDtRED08QP3gYhwG",
+          "name": "Jira SW Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        32,
+        -64
+      ],
+      "id": "52111cb9-63c4-4555-a96c-2aaad77cfa5f",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "owner": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "repository": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "labels": [],
+        "assignees": []
+      },
+      "type": "n8n-nodes-base.githubTool",
+      "typeVersion": 1.1,
+      "position": [
+        208,
+        176
+      ],
+      "id": "192a138f-3b65-4a74-bce7-034a4e308758",
+      "name": "get lastest Commits",
+      "webhookId": "dc8e8fe8-7d7a-4fcd-8205-fdf1b1322d09"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -96,
+        144
+      ],
+      "id": "f71b6edf-cc6b-4d12-a343-5ba8803ca5e8",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "updateFields": {}
+      },
+      "type": "n8n-nodes-base.jira",
+      "typeVersion": 1,
+      "position": [
+        400,
+        -64
+      ],
+      "id": "407800df-1d28-4393-b871-1e1533ab96af",
+      "name": "Update an issue",
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "fDtRED08QP3gYhwG",
+          "name": "Jira SW Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.sentryIoTool",
+      "typeVersion": 1.1,
+      "position": [
+        336,
+        144
+      ],
+      "id": "d0b3b727-d1f0-499e-9c93-f8d25bf03aba",
+      "name": "Get an event in Sentry.io"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Jira Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get lastest Commits": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Update an issue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get an event in Sentry.io": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "86318106-d898-450c-82db-a12f5cd86afe",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ad7bd9d99b9f0217da04c08821316fdc405a9114a4202c704c7da7b455498f52"
+  },
+  "nodeGroups": [],
+  "id": "1bLwtUmz8JcMuGi8",
+  "tags": []
+}
